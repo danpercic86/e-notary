@@ -30,6 +30,7 @@ django-extra-checks = "^0.11.0"
 mypy = "^0.931"
 types-PyYAML = "^6.0.3"
 coverage = {version = "^6.3", extras = ["toml"]}
+Faker = "^11.3.0"
 
 [tool.black]
 target-version = ['py310']

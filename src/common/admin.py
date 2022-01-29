@@ -1,8 +1,11 @@
+import datetime
 from typing import Tuple, Dict
 
+import faker as faker
 from django.contrib.admin import ModelAdmin, register
+from faker import Faker
 
-from common.models import Example, Client
+from common.models import Example, Client, IdUpload
 
 
 class BaseModelAdmin(ModelAdmin):
@@ -36,6 +39,30 @@ class ExampleAdmin(BaseModelAdmin):
         "published_at",
     )
 
+
 @register(Client)
 class ClientsAdmin(BaseModelAdmin):
     pass
+
+
+@register(IdUpload)
+class IdUploadAdmin(ModelAdmin):
+    def save_model(self, request, obj:IdUpload, form, change:bool)->None:
+        client= Client()
+        fake = Faker()
+        client.first_name = fake.first_name()
+        client.last_name = fake.last_name()
+        client.birthday = datetime.datetime.now()
+        client.id_emitted_at = fake.id_emitted_at()
+        client.id_emitted_by = fake.id_emitted_by()
+        client.id_number = fake.random.randint(10000,999999)
+        client.id_emitted_at = fake.id_emitted_at()
+        client.cnp = fake.unique.random_int(min=1000000000000,max=6999999999999)
+        client.residence = fake.address()
+        client.id_series = client.first_name[0] + client.last_name[0]
+        client.created = datetime.datetime.now()
+        client.modified = datetime.datetime.now()
+        client.face=obj.face
+        client.back=obj.back
+        client.save()
+        print(obj.back)

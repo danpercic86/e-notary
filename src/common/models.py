@@ -1,7 +1,7 @@
 from typing import final, AnyStr, Final
 
 from django.db.models import Model, SlugField, CharField, PositiveIntegerField, \
-    DateField
+    DateField, ImageField
 from django.utils.translation import gettext as _
 from model_utils import Choices
 from model_utils.fields import MonitorField
@@ -75,9 +75,18 @@ class Client(TimeStampedModel, BaseModel):
     id_emitted_by = CharField(max_length=100)
     id_emitted_at = DateField()
     birthday = DateField()
+    front = ImageField()
+    back = ImageField()
 
     def __str__(self):
         return str(self.first_name) + " " + str(self.last_name)
 
     class Meta:
         db_table = "clients"
+
+class IdUpload(Model):
+    front = ImageField()
+    back = ImageField()
+
+    class Meta:
+        managed = False
