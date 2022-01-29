@@ -2,7 +2,7 @@ from typing import Tuple, Dict
 
 from django.contrib.admin import ModelAdmin, register
 
-from common.models import Example
+from common.models import Example, Client
 
 
 class BaseModelAdmin(ModelAdmin):
@@ -35,3 +35,7 @@ class ExampleAdmin(BaseModelAdmin):
         "status_changed",
         "published_at",
     )
+
+@register(Client)
+class ClientsAdmin(BaseModelAdmin):
+    pass
