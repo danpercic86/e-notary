@@ -1,0 +1,81 @@
+[tool.poetry]
+name = "django-template-project"
+version = "0.1.0"
+description = "A template to start hacking with Django"
+authors = ["Dan Percic <danpercic86@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^4.0.1"
+djangorestframework = "^3.13.1"
+django-cors-headers = "^3.11.0"
+Pillow = "^9.0.0"
+django-admin-thumbnails = "^0.2.6"
+PyYAML = "^6.0"
+docutils = "^0.18.1"
+django-model-utils = "^4.2.0"
+drf-spectacular = "^0.21.1"
+django-jazzmin = "^2.4.9"
+psycopg2-binary = "^2.9.3"
+
+[tool.poetry.dev-dependencies]
+pylint = "^3.0.0a1"
+black = "^21.12b0"
+django-querycount = "^0.7.0"
+django-debug-toolbar = "^3.2.1"
+nplusone = "^1.0.0"
+django-extra-checks = "^0.11.0"
+mypy = "^0.931"
+types-PyYAML = "^6.0.3"
+coverage = {version = "^6.3", extras = ["toml"]}
+
+[tool.black]
+target-version = ['py310']
+exclude = '''
+/(
+    \.git
+  | \__pycache__
+  | \venv
+  | \.venv
+  | migrations
+)/
+'''
+
+[tool.pylint.messages_control]
+disable = """
+    C0330,
+    C0326,
+    missing-class-docstring,
+    missing-module-docstring,
+    too-few-public-methods,
+    unused-wildcard-import,
+    wildcard-import,
+    unsubscriptable-object,
+    missing-function-docstring,
+    ungrouped-imports,
+    no-member,
+    too-many-ancestors,
+    import-outside-toplevel,
+    protected-access,
+    invalid-name
+"""
+
+[tool.pylint.master]
+ignore = """
+    migrations
+"""
+
+[tool.pylint.format]
+max-line-length = "88"
+
+[tool.coverage.run]
+omit = [".venv/*", "*/site-packages/*"]
+
+[tool.coverage.report]
+fail_under = 100.0
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
