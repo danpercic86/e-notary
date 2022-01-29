@@ -1,7 +1,7 @@
 from typing import final, AnyStr, Final
 
 from django.db.models import Model, SlugField, CharField, PositiveIntegerField, \
-    DateField
+    DateField, ImageField
 from django.utils.translation import gettext as _
 from model_utils import Choices
 from model_utils.fields import MonitorField
@@ -21,7 +21,7 @@ class BaseModel(Model):
     class Meta:
         abstract = True
 
-    def get_change_url(self) -> AnyStr:
+    def get_absolute_url(self) -> AnyStr:
         from django.urls import reverse_lazy
 
         return reverse_lazy(
@@ -38,7 +38,7 @@ class BaseModel(Model):
         """
         from django.utils.html import format_html
 
-        return format_html(f"<a href='{self.get_change_url()}'>{self}</a>")
+        return format_html(f"<a href='{self.get_absolute_url()}'>{self}</a>")
 
 
 @final
@@ -75,9 +75,19 @@ class Client(TimeStampedModel, BaseModel):
     id_number = PositiveIntegerField()
     id_emitted_by = CharField(max_length=100)
     id_emitted_at = DateField()
+    face = ImageField()
+    back = ImageField()
 
     def __str__(self):
         return str(self.first_name) + " " + str(self.last_name)
 
     class Meta:
         db_table = "clients"
+
+
+class IdUpload(Model):
+    face = ImageField()
+    back = ImageField()
+
+    class Meta:
+        managed = False
