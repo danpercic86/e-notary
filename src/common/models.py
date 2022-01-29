@@ -1,10 +1,13 @@
 from typing import final, AnyStr, Final
 
-from django.db.models import Model, SlugField, CharField
+from django.db.models import Model, SlugField, CharField, PositiveIntegerField, \
+    DateField
 from django.utils.translation import gettext as _
 from model_utils import Choices
 from model_utils.fields import MonitorField
 from model_utils.models import TimeStampedModel, StatusModel
+
+from common.fileds import BigIntegerRangeField
 
 
 class SlugableModel(Model):
@@ -60,3 +63,21 @@ class Example(TimeStampedModel, StatusModel, BaseModel):
 
     class Meta:
         db_table = "examples"
+
+
+class Client(TimeStampedModel, BaseModel):
+    first_name = CharField(max_length=300)
+    last_name = CharField(max_length=300)
+    cnp = BigIntegerRangeField(min_value=1000000000000, max_value=6999999999999)
+    residence = CharField(max_length=500)
+    birthday = DateField()
+    id_series = CharField(max_length=2)
+    id_number = PositiveIntegerField()
+    id_emitted_by = CharField(max_length=100)
+    id_emitted_at = DateField()
+
+    def __str__(self):
+        return str(self.first_name) + " " + str(self.last_name)
+
+    class Meta:
+        db_table = "clients"
