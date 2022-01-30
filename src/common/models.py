@@ -3,10 +3,16 @@ import re
 from typing import final, AnyStr, Final
 
 from django.conf import settings
-from django.db.models import Model, SlugField, CharField, PositiveIntegerField, \
-    DateField, ImageField, FileField, Field
+from django.db.models import (
+    Model,
+    SlugField,
+    CharField,
+    PositiveIntegerField,
+    DateField,
+    ImageField,
+    FileField,
+)
 from django.utils.functional import cached_property
-from django.utils.regex_helper import Group
 from django.utils.translation import gettext as _
 from docx import Document as Open
 from docx.document import Document
@@ -95,19 +101,21 @@ class Client(TimeStampedModel, BaseModel):
 
     def save(self, *args, **kwargs):
         document: Document = Open(
-            os.path.join(settings.BASE_DIR, 'templates', 'template-procura.docx'))
+            os.path.join(settings.BASE_DIR, "templates", "template-procura.docx")
+        )
         for paragraph in document.paragraphs:
             for attr_name in re.findall(variables_pattern, paragraph.text):
                 if value := getattr(self, attr_name, None):
-                    paragraph.text = paragraph.text.replace("{{" + attr_name + "}}",
-                                                            str(value))
+                    paragraph.text = paragraph.text.replace(
+                        "{{" + attr_name + "}}", str(value)
+                    )
                 else:
-                    print(f'Attribute {attr_name} not found!')
+                    print(f"Attribute {attr_name} not found!")
 
         new_document_name = f"{self.name}.docx"
         document.save(os.path.join(settings.MEDIA_ROOT, new_document_name))
         self.generated_doc = new_document_name
-        return super(Client, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
