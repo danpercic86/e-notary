@@ -42,7 +42,7 @@ class ExampleAdmin(BaseModelAdmin):
 
 @register(Client)
 class ClientsAdmin(BaseModelAdmin):
-    pass
+    readonly_fields = ('generated_doc',)
 
 
 @register(IdUpload)

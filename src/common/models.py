@@ -1,8 +1,15 @@
+import os.path
+import re
 from typing import final, AnyStr, Final
 
+from django.conf import settings
 from django.db.models import Model, SlugField, CharField, PositiveIntegerField, \
-    DateField, ImageField
+    DateField, ImageField, FileField, Field
+from django.utils.functional import cached_property
+from django.utils.regex_helper import Group
 from django.utils.translation import gettext as _
+from docx import Document as Open
+from docx.document import Document
 from model_utils import Choices
 from model_utils.fields import MonitorField
 from model_utils.models import TimeStampedModel, StatusModel
@@ -65,6 +72,9 @@ class Example(TimeStampedModel, StatusModel, BaseModel):
         db_table = "examples"
 
 
+variables_pattern = re.compile("{{(.*?)}}")
+
+
 class Client(TimeStampedModel, BaseModel):
     first_name = CharField(max_length=300)
     last_name = CharField(max_length=300)
@@ -77,9 +87,30 @@ class Client(TimeStampedModel, BaseModel):
     id_emitted_at = DateField()
     face = ImageField()
     back = ImageField()
+    generated_doc = FileField()
+
+    @cached_property
+    def name(self):
+        return str(self.first_name) + " " + str(self.last_name)
+
+    def save(self, *args, **kwargs):
+        document: Document = Open(
+            os.path.join(settings.BASE_DIR, 'templates', 'template-procura.docx'))
+        for paragraph in document.paragraphs:
+            for attr_name in re.findall(variables_pattern, paragraph.text):
+                if value := getattr(self, attr_name, None):
+                    paragraph.text = paragraph.text.replace("{{" + attr_name + "}}",
+                                                            str(value))
+                else:
+                    print(f'Attribute {attr_name} not found!')
+
+        new_document_name = f"{self.name}.docx"
+        document.save(os.path.join(settings.MEDIA_ROOT, new_document_name))
+        self.generated_doc = new_document_name
+        return super(Client, self).save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.first_name) + " " + str(self.last_name)
+        return self.name
 
     class Meta:
         db_table = "clients"
