@@ -1,7 +1,7 @@
+import datetime
+import os
 from typing import Callable, Optional, Union, List, Tuple
 
-import os
-import datetime
 import yaml
 from django.utils.decorators import method_decorator
 

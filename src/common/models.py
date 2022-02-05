@@ -1,8 +1,10 @@
+import datetime
 import os.path
 import re
 from typing import final, AnyStr, Final
 
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db.models import (
     Model,
     SlugField,
@@ -11,6 +13,9 @@ from django.db.models import (
     DateField,
     ImageField,
     FileField,
+    ForeignKey,
+    CASCADE,
+    SET_NULL,
 )
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
@@ -81,6 +86,27 @@ class Example(TimeStampedModel, StatusModel, BaseModel):
 variables_pattern = re.compile("{{(.*?)}}")
 
 
+@final
+class Template(TimeStampedModel, BaseModel):
+    name = CharField(max_length=500)
+    file = FileField(
+        upload_to="templates/",
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["docx"],
+                message="Incarcă numai fișiere Microsoft Word (.docx)",
+            )
+        ],
+    )
+
+    def __str__(self):
+        return f"{self.name} ({str(self.file.name).rsplit('/')[1]})"
+
+    class Meta:
+        db_table = "templates"
+
+
+@final
 class Client(TimeStampedModel, BaseModel):
     first_name = CharField(max_length=300)
     last_name = CharField(max_length=300)
@@ -93,6 +119,7 @@ class Client(TimeStampedModel, BaseModel):
     id_emitted_at = DateField()
     face = ImageField()
     back = ImageField()
+    template = ForeignKey(Template, on_delete=SET_NULL, null=True)
     generated_doc = FileField()
 
     @cached_property
@@ -100,22 +127,24 @@ class Client(TimeStampedModel, BaseModel):
         return str(self.first_name) + " " + str(self.last_name)
 
     def save(self, *args, **kwargs):
-        document: Document = Open(
-            os.path.join(settings.BASE_DIR, "templates", "template-procura.docx")
-        )
+        document: Document = Open(self.template.file.file)
         for paragraph in document.paragraphs:
             for attr_name in re.findall(variables_pattern, paragraph.text):
                 if value := getattr(self, attr_name, None):
-                    paragraph.text = paragraph.text.replace(
-                        "{{" + attr_name + "}}", str(value)
-                    )
+                    attribute = "{{" + attr_name + "}}"
+                    paragraph.text = paragraph.text.replace(attribute, str(value))
                 else:
                     print(f"Attribute {attr_name} not found!")
 
-        new_document_name = f"{self.name}.docx"
+        now = datetime.datetime.now().strftime("%Y_%m_%d")
+        new_document_name = f"{self.name}--{self.template_name}--{now}.docx"
         document.save(os.path.join(settings.MEDIA_ROOT, new_document_name))
         self.generated_doc = new_document_name
         return super().save(*args, **kwargs)
+
+    @cached_property
+    def template_name(self):
+        return self.template.name.replace(" ", "_").replace("/", "_").replace("\\", "_")
 
     def __str__(self):
         return self.name
@@ -127,6 +156,7 @@ class Client(TimeStampedModel, BaseModel):
 class IdUpload(Model):
     face = ImageField()
     back = ImageField()
+    template = ForeignKey(Template, on_delete=CASCADE)
 
     class Meta:
         managed = False

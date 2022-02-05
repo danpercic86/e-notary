@@ -2,10 +2,11 @@ import datetime
 from typing import Tuple, Dict
 
 from django.contrib.admin import ModelAdmin, register
+from django.forms import ModelForm, FileField, FileInput
 from django.shortcuts import redirect
 from faker import Faker
 
-from common.models import Example, Client, IdUpload
+from common.models import Example, Client, IdUpload, Template
 
 
 class BaseModelAdmin(ModelAdmin):
@@ -42,18 +43,19 @@ class ExampleAdmin(BaseModelAdmin):
 
 @register(Client)
 class ClientsAdmin(BaseModelAdmin):
-    readonly_fields = ("generated_doc",)
+    readonly_fields = ("generated_doc",) + BaseModelAdmin.readonly_fields
+    list_display = ("__str__", "template", "generated_doc")
 
 
 @register(IdUpload)
 class IdUploadAdmin(ModelAdmin):
-    def has_change_permission(self, request, obj=None):
+    def has_change_permission(self, request, obj=None) -> bool:
         return False
 
-    def has_view_permission(self, request, obj=None):
+    def has_view_permission(self, request, obj=None) -> bool:
         return False
 
-    def save_model(self, request, obj, form, change: bool) -> None:
+    def save_model(self, request, obj: IdUpload, form, change: bool) -> None:
         client = Client()
         fake = Faker()
         client.first_name = fake.first_name()
@@ -69,8 +71,26 @@ class IdUploadAdmin(ModelAdmin):
         client.modified = datetime.datetime.now()
         client.face = obj.face
         client.back = obj.back
+        client.template = obj.template
         client.save()
         obj.client = client
 
     def response_add(self, request, obj, post_url_continue=None):
         return redirect(to=obj.client)
+
+
+class TemplatesForm(ModelForm):
+    file = FileField(
+        widget=FileInput(attrs={"accept": "application/docx"}),
+        error_messages={"invalid": "Incarcă numai fișiere Microsoft Word (.docx)"},
+    )
+
+    class Meta:
+        model = Template
+        fields = "__all__"
+
+
+@register(Template)
+class TemplatesAdmin(BaseModelAdmin):
+    readonly_fields = ("file",) + BaseModelAdmin.readonly_fields
+    form = TemplatesForm
