@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/django-template-project.iml" filepath="$PROJECT_DIR$/.idea/django-template-project.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/e-notary.iml" filepath="$PROJECT_DIR$/.idea/e-notary.iml" />
     </modules>
   </component>
 </project>
