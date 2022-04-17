@@ -1,12 +1,15 @@
-import datetime
+import os.path
 from typing import Tuple, Dict
 
+import pandas
+from django.conf import settings
 from django.contrib.admin import ModelAdmin, register
 from django.forms import ModelForm, FileField, FileInput
 from django.shortcuts import redirect
 from faker import Faker
 
 from common.models import Example, Client, IdUpload, Template
+from common.ocr import ocr
 
 
 class BaseModelAdmin(ModelAdmin):
@@ -58,17 +61,18 @@ class IdUploadAdmin(ModelAdmin):
     def save_model(self, request, obj: IdUpload, form, change: bool) -> None:
         client = Client()
         fake = Faker()
-        client.first_name = fake.first_name()
-        client.last_name = fake.last_name()
-        client.birthday = datetime.datetime.now()
-        client.id_emitted_at = datetime.datetime.now()
-        client.id_emitted_by = fake.name()
-        client.id_number = fake.random.randint(100000, 99999999)
-        client.id_series = client.first_name[0] + client.last_name[0]
+        result = ocr(os.path.join(settings.MEDIA_ROOT, obj.face.name),
+                     os.path.join(settings.BASE_DIR, 'templates', 'template.jpeg'))
+        print(result)
+        client.first_name = result['first_name']
+        client.last_name = result['last_name']
+        client.birthday = pandas.to_datetime(result['birthday']).date()
+        client.id_emitted_at = pandas.to_datetime(result['id_emitted_at']).date()
+        client.id_emitted_by = result['id_emitted_by']
+        client.id_series = result['id_series'][:1]
+        client.id_number = result['id_series'][1:]
         client.cnp = fake.unique.random_int(min=1000000000000, max=6999999999999)
         client.residence = fake.address()
-        client.created = datetime.datetime.now()
-        client.modified = datetime.datetime.now()
         client.face = obj.face
         client.back = obj.back
         client.template = obj.template
