@@ -23,6 +23,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from docx import Document as Open
 from docx.document import Document
+from docx.table import Table, _Row, _Cell
 from docx.text.paragraph import Paragraph
 from model_utils import Choices
 from model_utils.fields import MonitorField
@@ -164,16 +165,25 @@ class Client(TimeStampedModel, BaseModel):
         for paragraph in document.paragraphs:
             self._process_paragraph(paragraph)
 
-    def _process_paragraph(self, paragraph: Paragraph):
-        for attr_name in re.findall(VARIABLES_PATTERN, paragraph.text):
-            self._process_attribute(attr_name, paragraph)
+        for table in document.tables:
+            self._process_table(table)
 
-    def _process_attribute(self, attr_name: str, paragraph: Paragraph):
+    def _process_paragraph(self, paragraph: Paragraph) -> None:
+        for attr_name in re.findall(VARIABLES_PATTERN, paragraph.text):
+            paragraph.text = self._process_attribute(attr_name, paragraph.text)
+
+    def _process_table(self, table: Table) -> None:
+        for row in table.rows:  # type: _Row
+            for cell in row.cells:  # type: _Cell
+                for paragraph in cell.paragraphs:
+                    self._process_paragraph(paragraph)
+
+    def _process_attribute(self, attr_name: str, text: str) -> str:
         if value := getattr(self, attr_name, None):
-            attribute = "{{" + attr_name + "}}"
-            paragraph.text = paragraph.text.replace(attribute, str(value))
+            return text.replace("{{" + attr_name + "}}", str(value))
         else:
             print(f"Attribute {attr_name} not found!")
+            return text
 
     @cached_property
     def date(self):
