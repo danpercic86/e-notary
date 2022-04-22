@@ -46,8 +46,44 @@ class ExampleAdmin(BaseModelAdmin):
 
 @register(Client)
 class ClientsAdmin(BaseModelAdmin):
-    readonly_fields = ("generated_doc",) + BaseModelAdmin.readonly_fields
-    list_display = ("__str__", "template", "generated_doc")
+    fieldsets = (
+        (
+            "Date client",
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "cnp",
+                    "residence",
+                    "birthday",
+                    "id_series",
+                    "id_number",
+                    "id_emitted_by",
+                    "id_emitted_at",
+                    "face",
+                    "back",
+                    "template",
+                    "generated_doc",
+                )
+            },
+        ),
+        (
+            "Chitanță",
+            {
+                "fields": (
+                    "cost",
+                    "tax",
+                    "registration_number",
+                    "receipt_series",
+                    "receipt_number",
+                    "receipt",
+                )
+            },
+        ),
+        CREATED_MODIFIED,
+    )
+    readonly_fields = ("generated_doc", "receipt") + BaseModelAdmin.readonly_fields
+    list_display = ("__str__", "template", "generated_doc", "receipt")
 
 
 @register(IdUpload)
@@ -65,7 +101,6 @@ class IdUploadAdmin(ModelAdmin):
             os.path.join(settings.MEDIA_ROOT, obj.face.name),
             os.path.join(settings.BASE_DIR, "templates", "template.jpeg"),
         )
-        print(result)
         client.first_name = result["first_name"]
         client.last_name = result["last_name"]
         client.birthday = pandas.to_datetime(result["birthday"]).date()

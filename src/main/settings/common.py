@@ -61,10 +61,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "main.urls"
 
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "templates")],
+        "DIRS": [TEMPLATES_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -304,6 +306,7 @@ JAZZMIN_SETTINGS: Dict = {
     "changeform_format_overrides": {
         "administration.user": "collapsible",
         "auth.group": "vertical_tabs",
+        "common.client": "vertical_tabs",
     },
     # Add a language dropdown into the admin
     "language_chooser": True,

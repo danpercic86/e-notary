@@ -57,3 +57,7 @@ def get_upload_path(instance, file_name: str) -> str:
 
 def create_swagger_info(schema):
     return method_decorator(name="create", decorator=schema)
+
+
+def sanitize(string: str) -> str:
+    return string.replace(" ", "_").replace("/", "_").replace("\\", "_")

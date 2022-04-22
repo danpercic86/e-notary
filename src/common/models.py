@@ -1,7 +1,7 @@
 import datetime
 import os.path
 import re
-from typing import final, AnyStr, Final
+from typing import final, AnyStr, Final, TextIO
 
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
@@ -18,16 +18,19 @@ from django.db.models import (
     SET_NULL,
     DecimalField,
 )
+from django.db.models.fields.files import FieldFile
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 from docx import Document as Open
 from docx.document import Document
+from docx.text.paragraph import Paragraph
 from model_utils import Choices
 from model_utils.fields import MonitorField
 from model_utils.models import TimeStampedModel, StatusModel
 
 from common.constants import NUMBERS, MONTHS, YEARS
 from common.fileds import BigIntegerRangeField
+from common.utils import sanitize
 
 
 class SlugableModel(Model):
@@ -124,30 +127,57 @@ class Client(TimeStampedModel, BaseModel):
     )
     tax = DecimalField(verbose_name="Taxa de stat", max_digits=10, decimal_places=2)
     registration_number = CharField(max_length=100)
+    receipt_series = CharField(max_length=100, default="DAA")
+    receipt_number = PositiveIntegerField()
     face = ImageField()
     back = ImageField()
     template = ForeignKey(Template, on_delete=SET_NULL, null=True)
     generated_doc = FileField()
+    receipt = FileField()
 
     @cached_property
     def name(self):
         return str(self.first_name) + " " + str(self.last_name)
 
     def save(self, *args, **kwargs):
-        document: Document = Open(self.template.file.file)
-        for paragraph in document.paragraphs:
-            for attr_name in re.findall(VARIABLES_PATTERN, paragraph.text):
-                if value := getattr(self, attr_name, None):
-                    attribute = "{{" + attr_name + "}}"
-                    paragraph.text = paragraph.text.replace(attribute, str(value))
-                else:
-                    print(f"Attribute {attr_name} not found!")
-
-        now = datetime.datetime.now().strftime("%Y_%m_%d")
-        new_document_name = f"{self.name}--{self.template_name}--{now}.docx"
-        document.save(os.path.join(settings.MEDIA_ROOT, new_document_name))
-        self.generated_doc = new_document_name
+        self.generated_doc = self._generate_doc(
+            self.template.file.file, self.template_name
+        )
+        self.receipt = self._generate_doc(
+            f"{settings.TEMPLATES_DIR}/template-chitanta.docx", "chitanță"
+        )
         return super().save(*args, **kwargs)
+
+    def _generate_doc(self, file: FieldFile | str | TextIO, raw_doc_name: str):
+        document: Document = Open(file)
+        self._process_document(document)
+        new_document_name = self._generate_doc_name(raw_doc_name)
+        document.save(os.path.join(settings.MEDIA_ROOT, new_document_name))
+        return new_document_name
+
+    def _generate_doc_name(self, doc_name: str):
+        now = datetime.datetime.now().strftime("%Y_%m_%d")
+        new_document_name = f"{self.name}--{doc_name}--{now}.docx"
+        return new_document_name
+
+    def _process_document(self, document: Document):
+        for paragraph in document.paragraphs:
+            self._process_paragraph(paragraph)
+
+    def _process_paragraph(self, paragraph: Paragraph):
+        for attr_name in re.findall(VARIABLES_PATTERN, paragraph.text):
+            self._process_attribute(attr_name, paragraph)
+
+    def _process_attribute(self, attr_name: str, paragraph: Paragraph):
+        if value := getattr(self, attr_name, None):
+            attribute = "{{" + attr_name + "}}"
+            paragraph.text = paragraph.text.replace(attribute, str(value))
+        else:
+            print(f"Attribute {attr_name} not found!")
+
+    @cached_property
+    def date(self):
+        return datetime.datetime.now().strftime("%d.%m.%Y")
 
     @cached_property
     def year(self):
@@ -162,8 +192,16 @@ class Client(TimeStampedModel, BaseModel):
         return NUMBERS[datetime.datetime.now().day]
 
     @cached_property
+    def cost_verbose(self):
+        return self.cost
+
+    @cached_property
+    def tax_verbose(self):
+        return self.tax
+
+    @cached_property
     def template_name(self):
-        return self.template.name.replace(" ", "_").replace("/", "_").replace("\\", "_")
+        return sanitize(self.template.name)
 
     def __str__(self):
         return self.name

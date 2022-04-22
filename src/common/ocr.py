@@ -56,7 +56,7 @@ def ocr(filepath: str, templatepath: str):
     for _, r in enumerate(roi):
         cv2.rectangle(img_mask, (r[0][0], r[0][1]), (r[1][0], r[1][1]), (0, 255, 0), 2)
         img_show = cv2.addWeighted(img_show, 0.99, img_mask, 0.1, 0)
-        img_crop = img_scan[r[0][1]: r[1][1], r[0][0]: r[1][0]]
+        img_crop = img_scan[r[0][1] : r[1][1], r[0][0] : r[1][0]]
         img_crop = cv2.cvtColor(img_crop, cv2.COLOR_BGR2GRAY)
         thresh = cv2.threshold(
             img_crop, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
