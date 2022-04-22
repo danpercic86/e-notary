@@ -16,6 +16,7 @@ from django.db.models import (
     ForeignKey,
     CASCADE,
     SET_NULL,
+    DecimalField,
 )
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
@@ -25,6 +26,7 @@ from model_utils import Choices
 from model_utils.fields import MonitorField
 from model_utils.models import TimeStampedModel, StatusModel
 
+from common.constants import NUMBERS, MONTHS, YEARS
 from common.fileds import BigIntegerRangeField
 
 
@@ -83,7 +85,7 @@ class Example(TimeStampedModel, StatusModel, BaseModel):
         db_table = "examples"
 
 
-variables_pattern = re.compile("{{(.*?)}}")
+VARIABLES_PATTERN = re.compile("{{(.*?)}}")
 
 
 @final
@@ -117,6 +119,11 @@ class Client(TimeStampedModel, BaseModel):
     id_number = PositiveIntegerField()
     id_emitted_by = CharField(max_length=100)
     id_emitted_at = DateField()
+    cost = DecimalField(
+        verbose_name="Cost asistență notarială", max_digits=10, decimal_places=2
+    )
+    tax = DecimalField(verbose_name="Taxa de stat", max_digits=10, decimal_places=2)
+    registration_number = CharField(max_length=100)
     face = ImageField()
     back = ImageField()
     template = ForeignKey(Template, on_delete=SET_NULL, null=True)
@@ -129,7 +136,7 @@ class Client(TimeStampedModel, BaseModel):
     def save(self, *args, **kwargs):
         document: Document = Open(self.template.file.file)
         for paragraph in document.paragraphs:
-            for attr_name in re.findall(variables_pattern, paragraph.text):
+            for attr_name in re.findall(VARIABLES_PATTERN, paragraph.text):
                 if value := getattr(self, attr_name, None):
                     attribute = "{{" + attr_name + "}}"
                     paragraph.text = paragraph.text.replace(attribute, str(value))
@@ -141,6 +148,18 @@ class Client(TimeStampedModel, BaseModel):
         document.save(os.path.join(settings.MEDIA_ROOT, new_document_name))
         self.generated_doc = new_document_name
         return super().save(*args, **kwargs)
+
+    @cached_property
+    def year(self):
+        return YEARS[datetime.datetime.now().year]
+
+    @cached_property
+    def month(self):
+        return MONTHS[datetime.datetime.now().month]
+
+    @cached_property
+    def day(self):
+        return NUMBERS[datetime.datetime.now().day]
 
     @cached_property
     def template_name(self):
@@ -157,6 +176,11 @@ class IdUpload(Model):
     face = ImageField()
     back = ImageField()
     template = ForeignKey(Template, on_delete=CASCADE)
+    cost = DecimalField(
+        verbose_name="Cost asistență notarială", max_digits=10, decimal_places=2
+    )
+    tax = DecimalField(verbose_name="Taxa de stat", max_digits=10, decimal_places=2)
+    registration_number = CharField(max_length=100)
 
     class Meta:
         managed = False

@@ -61,18 +61,23 @@ class IdUploadAdmin(ModelAdmin):
     def save_model(self, request, obj: IdUpload, form, change: bool) -> None:
         client = Client()
         fake = Faker()
-        result = ocr(os.path.join(settings.MEDIA_ROOT, obj.face.name),
-                     os.path.join(settings.BASE_DIR, 'templates', 'template.jpeg'))
+        result = ocr(
+            os.path.join(settings.MEDIA_ROOT, obj.face.name),
+            os.path.join(settings.BASE_DIR, "templates", "template.jpeg"),
+        )
         print(result)
-        client.first_name = result['first_name']
-        client.last_name = result['last_name']
-        client.birthday = pandas.to_datetime(result['birthday']).date()
-        client.id_emitted_at = pandas.to_datetime(result['id_emitted_at']).date()
-        client.id_emitted_by = result['id_emitted_by']
-        client.id_series = result['id_series'][:1]
-        client.id_number = result['id_series'][1:]
+        client.first_name = result["first_name"]
+        client.last_name = result["last_name"]
+        client.birthday = pandas.to_datetime(result["birthday"]).date()
+        client.id_emitted_at = pandas.to_datetime(result["id_emitted_at"]).date()
+        client.id_emitted_by = result["id_emitted_by"]
+        client.id_series = result["id_series"][:1]
+        client.id_number = result["id_series"][1:]
         client.cnp = fake.unique.random_int(min=1000000000000, max=6999999999999)
         client.residence = fake.address()
+        client.cost = obj.cost
+        client.tax = obj.tax
+        client.registration_number = obj.registration_number
         client.face = obj.face
         client.back = obj.back
         client.template = obj.template
