@@ -157,8 +157,7 @@ class Client(TimeStampedModel, BaseModel):
         return new_document_name
 
     def _generate_doc_name(self, doc_name: str):
-        now = datetime.datetime.now().strftime("%Y_%m_%d")
-        new_document_name = f"{self.name}--{doc_name}--{now}.docx"
+        new_document_name = f"{self.name}--{doc_name}--{self.date}.docx"
         return new_document_name
 
     def _process_document(self, document: Document):
@@ -181,25 +180,29 @@ class Client(TimeStampedModel, BaseModel):
     def _process_attribute(self, attr_name: str, text: str) -> str:
         if value := getattr(self, attr_name, None):
             return text.replace("{{" + attr_name + "}}", str(value))
-        else:
-            print(f"Attribute {attr_name} not found!")
-            return text
+
+        print(f"Attribute {attr_name} not found!")
+        return text
 
     @cached_property
     def date(self):
-        return datetime.datetime.now().strftime("%d.%m.%Y")
+        return self._now.strftime("%d.%m.%Y")
 
     @cached_property
     def year(self):
-        return YEARS[datetime.datetime.now().year]
+        return YEARS.get(self._now.year)
+
+    @cached_property
+    def _now(self):
+        return datetime.datetime.now()
 
     @cached_property
     def month(self):
-        return MONTHS[datetime.datetime.now().month]
+        return MONTHS.get(self._now.month)
 
     @cached_property
     def day(self):
-        return NUMBERS[datetime.datetime.now().day]
+        return NUMBERS.get(self._now.day)
 
     @cached_property
     def cost_verbose(self):

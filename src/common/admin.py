@@ -60,6 +60,7 @@ class ClientsAdmin(BaseModelAdmin):
                     "id_number",
                     "id_emitted_by",
                     "id_emitted_at",
+                    "registration_number",
                     "face",
                     "back",
                     "template",
@@ -73,7 +74,6 @@ class ClientsAdmin(BaseModelAdmin):
                 "fields": (
                     "cost",
                     "tax",
-                    "registration_number",
                     "receipt_series",
                     "receipt_number",
                     "receipt",
@@ -136,5 +136,5 @@ class TemplatesForm(ModelForm):
 
 @register(Template)
 class TemplatesAdmin(BaseModelAdmin):
-    readonly_fields = ("file",) + BaseModelAdmin.readonly_fields
-    form = TemplatesForm
+    pass
+    # form = TemplatesForm
